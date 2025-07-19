@@ -1,0 +1,25 @@
+# Ignore dependencies and environment configs
+
+# Frontend node modules
+frontend/node_modules/
+
+# Backend node modules (in case you add one)
+backend/node_modules/
+
+# Environment files
+backend/.env
+frontend/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+
+# Build/output folders
+frontend/dist/
+frontend/build/
+backend/dist/
+backend/build/
