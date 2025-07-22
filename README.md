@@ -1,5 +1,7 @@
 # Business Nexus - Full Stack Development Platform
 
+Live Running App : https://profound-starlight-612332.netlify.app/
+
 A professional networking platform designed to connect entrepreneurs and investors, built with React.js and Node.js.
 
 ## 🚀 Features
