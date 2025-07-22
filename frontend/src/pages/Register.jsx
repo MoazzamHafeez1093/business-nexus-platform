@@ -1,238 +1,285 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, User, Mail, Lock, Sparkles, CheckCircle, XCircle, ArrowRight, Building2, Users } from 'lucide-react';
-import { authAPI, userAPI } from '../services/api';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Mail, Lock, Eye, EyeOff, Building, Users } from 'lucide-react';
+import { authAPI } from '../services/api';
+import Button from '../components/Button';
+import InputField from '../components/InputField';
+import Card from '../components/Card';
 
-// Exact Button component from Entrance.jsx
-const Button = ({ children, onClick, variant = 'primary', className = '' }) => {
-  const baseClasses = 'relative overflow-hidden font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 active:scale-95 px-8 py-4 text-lg';
-  const variants = {
-    primary: 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:shadow-xl focus:ring-indigo-200',
-    ghost: 'bg-transparent text-white border-2 border-white/20 hover:bg-white/10 focus:ring-white/20'
-  };
-  return (
-    <button
-      className={`${baseClasses} ${variants[variant]} ${className}`}
-      onClick={onClick}
-      type="button"
-    >
-      {children}
-    </button>
-  );
-};
-
-const Toast = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-  return (
-    <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg transform transition-all duration-300 animate-slide-in-right ${
-      type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-    }`}>
-      {type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
-      <span className="font-medium">{message}</span>
-    </div>
-  );
-};
-
-const InputField = ({ label, name, type = 'text', value, onChange, onBlur, error, touched, placeholder, icon: Icon, ...props }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const inputType = type === 'password' && showPassword ? 'text' : type;
-  return (
-    <div className="relative group">
-      <label className="block text-sm font-semibold text-gray-200 mb-3 transition-colors">{label}</label>
-      <div className="relative">
-        {Icon && (
-          <Icon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-indigo-400" size={20} />
-        )}
-        <input
-          type={inputType}
-          name={name}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder={placeholder}
-          className={`w-full ${Icon ? 'pl-12' : 'pl-4'} ${type === 'password' ? 'pr-12' : 'pr-4'} py-4 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 hover:border-white/30 hover:bg-white/15 ${error && touched ? 'border-red-400 focus:border-red-500' : 'focus:border-indigo-500'}`}
-          {...props}
-        />
-        {type === 'password' && (
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-400 transition-colors"
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        )}
-      </div>
-      {error && touched && (
-        <p className="mt-2 text-sm text-red-400 animate-fade-in">{error}</p>
-      )}
-    </div>
-  );
-};
-
-const RoleSelector = ({ value, onChange }) => {
-  const roles = [
-    { id: 'investor', label: 'Investor', icon: Users, description: 'I want to invest in projects' },
-    { id: 'entrepreneur', label: 'Entrepreneur', icon: Building2, description: 'I have a project to pitch' }
-  ];
-  return (
-    <div className="space-y-4">
-      <label className="block text-sm font-semibold text-gray-200 mb-3">I am a...</label>
-      <div className="grid grid-cols-1 gap-4">
-        {roles.map((role) => {
-          const Icon = role.icon;
-          return (
-            <button
-              key={role.id}
-              type="button"
-              onClick={() => onChange(role.id)}
-              className={`relative p-4 rounded-xl border-2 transition-all duration-300 text-left group ${value === role.id ? 'border-indigo-500 bg-indigo-500/20 shadow-lg' : 'border-white/20 bg-white/5 hover:border-white/30 hover:bg-white/10'}`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${value === role.id ? 'bg-indigo-500 text-white' : 'bg-white/10 text-gray-400 group-hover:text-indigo-400'}`}>
-                  <Icon size={24} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-white mb-1">{role.label}</h3>
-                  <p className="text-sm text-gray-400">{role.description}</p>
-                </div>
-                {value === role.id && (
-                  <CheckCircle className="w-6 h-6 text-indigo-400" />
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const useFormValidation = (initialState, validationRules) => {
-  const [values, setValues] = useState(initialState);
+const Register = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'entrepreneur'
+  });
   const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
-  const validate = (name, value) => {
-    const rule = validationRules[name];
-    if (!rule) return '';
-    if (rule.required && !value.trim()) return `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
-    if (rule.minLength && value.length < rule.minLength) return `${name.charAt(0).toUpperCase() + name.slice(1)} must be at least ${rule.minLength} characters`;
-    if (rule.pattern && !rule.pattern.test(value)) return rule.message || `Invalid ${name}`;
-    return '';
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setValues(prev => ({ ...prev, [name]: value }));
-    if (touched[name]) setErrors(prev => ({ ...prev, [name]: validate(name, value) }));
-  };
-  const handleBlur = (e) => {
-    const { name, value } = e.target;
-    setTouched(prev => ({ ...prev, [name]: true }));
-    setErrors(prev => ({ ...prev, [name]: validate(name, value) }));
-  };
-  const validateAll = () => {
+
+  const validateForm = () => {
     const newErrors = {};
-    const newTouched = {};
-    Object.keys(validationRules).forEach(name => {
-      newTouched[name] = true;
-      const error = validate(name, values[name] || '');
-      if (error) newErrors[name] = error;
-    });
-    setTouched(newTouched);
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  return { values, errors, touched, handleChange, handleBlur, validateAll, setValues };
-};
 
-const RegisterPage = () => {
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const navigate = useNavigate();
-  const registerValidation = {
-    name: { required: true, minLength: 2 },
-    email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
-    password: { required: true, minLength: 8, pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' }
-  };
-  const registerForm = useFormValidation({ name: '', email: '', password: '', role: 'investor' }, registerValidation);
-  
-  const handleRegister = async () => {
-    if (!registerForm.validateAll()) return;
-    setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
+    if (!validateForm()) return;
+    
+    setLoading(true);
     try {
-      const res = await authAPI.register({
-        name: registerForm.values.name,
-        email: registerForm.values.email,
-        password: registerForm.values.password,
-        role: registerForm.values.role
+      const response = await authAPI.register(formData);
+      console.log('Registration successful:', response.data);
+      
+      // Auto-login after registration
+      const loginResponse = await authAPI.login({
+        email: formData.email,
+        password: formData.password
       });
       
-      localStorage.setItem('token', res.data.token);
-      userAPI.setUserData(res.data.user);
+      localStorage.setItem('token', loginResponse.data.token);
+      localStorage.setItem('userName', loginResponse.data.user.name);
+      localStorage.setItem('role', loginResponse.data.user.role);
+      localStorage.setItem('userId', loginResponse.data.user.id);
       
-      setToast({ message: 'Registration successful! Please login to continue.', type: 'success' });
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
+      // Navigate to role-specific dashboard
+      if (loginResponse.data.user.role === 'investor') {
+        navigate('/dashboard/investor');
+      } else if (loginResponse.data.user.role === 'entrepreneur') {
+        navigate('/dashboard/entrepreneur');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      setToast({ 
-        message: error.response?.data?.message || 'Registration failed. Please try again.', 
-        type: 'error' 
+      console.error('Registration error:', error);
+      setErrors({
+        general: error.response?.data?.message || 'Registration failed. Please try again.'
       });
     } finally {
       setLoading(false);
     }
   };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
-      <div className="w-full flex items-center justify-center">
-        <div className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-[40vw] xl:max-w-[30vw] bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl px-6 py-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-6 shadow-2xl">
-              <Sparkles className="w-12 h-12 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="p-8 shadow-xl border-0">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-8"
+          >
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-primary-600" />
             </div>
-            <h2 className="text-4xl font-bold text-white mb-2">Register</h2>
-            <p className="text-gray-300 text-lg">Join our community today</p>
-          </div>
-          <form className="space-y-6" onSubmit={e => { e.preventDefault(); handleRegister(); }}>
-            <InputField label="Full Name" name="name" value={registerForm.values.name} onChange={registerForm.handleChange} onBlur={registerForm.handleBlur} error={registerForm.errors.name} touched={registerForm.touched.name} placeholder="Enter your full name" icon={User} />
-            <InputField label="Email Address" name="email" type="email" value={registerForm.values.email} onChange={registerForm.handleChange} onBlur={registerForm.handleBlur} error={registerForm.errors.email} touched={registerForm.touched.email} placeholder="Enter your email" icon={Mail} />
-            <InputField label="Password" name="password" type="password" value={registerForm.values.password} onChange={registerForm.handleChange} onBlur={registerForm.handleBlur} error={registerForm.errors.password} touched={registerForm.touched.password} placeholder="Create a strong password" icon={Lock} />
-            <RoleSelector value={registerForm.values.role} onChange={(role) => registerForm.setValues({ ...registerForm.values, role })} />
-            <Button className="w-full group flex items-center gap-2 justify-center" onClick={handleRegister} variant="primary" type="submit">
-              {loading ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Creating account...</span>
-                </div>
-              ) : (
-                <>
-                  <span>Create Account</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </Button>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h1>
+            <p className="text-gray-600">Join our business networking platform</p>
+          </motion.div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <InputField
+                label="Full Name"
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="Enter your full name"
+                icon={<User className="w-4 h-4" />}
+                error={errors.name}
+                required
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <InputField
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Enter your email"
+                icon={<Mail className="w-4 h-4" />}
+                error={errors.email}
+                required
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <InputField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Create a password"
+                icon={<Lock className="w-4 h-4" />}
+                error={errors.password}
+                required
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <InputField
+                label="Confirm Password"
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                placeholder="Confirm your password"
+                icon={<Lock className="w-4 h-4" />}
+                error={errors.confirmPassword}
+                required
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="space-y-3"
+            >
+              <label className="block text-sm font-medium text-gray-700">
+                I am a...
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <motion.button
+                  type="button"
+                  onClick={() => handleInputChange('role', 'entrepreneur')}
+                  className={`
+                    p-4 rounded-lg border-2 transition-all duration-200 text-left
+                    ${formData.role === 'entrepreneur'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }
+                  `}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Building className="w-5 h-5 mb-2" />
+                  <div className="font-medium">Entrepreneur</div>
+                  <div className="text-xs text-gray-500">Looking for funding</div>
+                </motion.button>
+                
+                <motion.button
+                  type="button"
+                  onClick={() => handleInputChange('role', 'investor')}
+                  className={`
+                    p-4 rounded-lg border-2 transition-all duration-200 text-left
+                    ${formData.role === 'investor'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }
+                  `}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Users className="w-5 h-5 mb-2" />
+                  <div className="font-medium">Investor</div>
+                  <div className="text-xs text-gray-500">Looking to invest</div>
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {errors.general && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 bg-error-50 border border-error-200 rounded-lg"
+              >
+                <p className="text-sm text-error-600">{errors.general}</p>
+              </motion.div>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                loading={loading}
+                className="w-full"
+              >
+                {loading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </motion.div>
           </form>
-          <div className="mt-8 text-center">
-            <p className="text-gray-400">
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="mt-6 text-center"
+          >
+            <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
-                Sign In
+              <Link
+                to="/login"
+                className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              >
+                Sign in
               </Link>
             </p>
-          </div>
-        </div>
-      </div>
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+          </motion.div>
+        </Card>
+      </motion.div>
     </div>
   );
 };
 
-export default RegisterPage;
+export default Register;

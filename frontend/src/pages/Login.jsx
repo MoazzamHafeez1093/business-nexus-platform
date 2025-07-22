@@ -1,154 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
-import { authAPI, userAPI } from '../services/api';
-
-const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, type = 'button' }) => {
-  const baseClasses = 'relative overflow-hidden font-semibold rounded-xl transition-all duration-300 transform focus:outline-none focus:ring-4 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg shadow-lg w-full';
-  const variants = {
-    primary: `${disabled ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 hover:scale-105 active:scale-95'} text-white focus:ring-blue-300`,
-    ghost: 'bg-transparent text-white border-2 border-white/30 hover:bg-white/10 hover:border-white/50 focus:ring-white/20'
-  };
-  
-  return (
-    <button
-      className={`${baseClasses} ${variants[variant]} ${className}`}
-      onClick={onClick}
-      disabled={disabled}
-      type={type}
-    >
-      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-1000"></span>
-      <span className="relative z-10">
-        {children}
-      </span>
-    </button>
-  );
-};
-
-const InputField = ({ 
-  label, 
-  type = 'text', 
-  placeholder, 
-  value, 
-  onChange, 
-  error, 
-  icon: Icon,
-  showPasswordToggle = false,
-  name,
-  className
-}) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  
-  const inputType = type === 'password' && showPassword ? 'text' : type;
-  
-  return (
-    <div className="relative group">
-      <label className={`block text-sm font-semibold mb-3 transition-colors duration-300 ${isFocused ? 'text-blue-300' : 'text-gray-300'}`}>
-        {label}
-      </label>
-      <div className="relative">
-        {Icon && (
-          <Icon 
-            className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${
-              isFocused ? 'text-blue-400' : error ? 'text-red-400' : 'text-gray-400'
-            }`} 
-            size={20} 
-          />
-        )}
-        <input
-          type={inputType}
-          name={name}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          className={`w-full ${Icon ? 'pl-12' : 'pl-4'} ${showPasswordToggle ? 'pr-12' : 'pr-4'} py-3 sm:py-4 bg-white/5 border-2 rounded-xl text-white placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-4 backdrop-blur-sm text-sm sm:text-base ${
-            error 
-              ? 'border-red-400 focus:border-red-300 focus:ring-red-300/20' 
-              : isFocused
-                ? 'border-blue-400 focus:border-blue-300 focus:ring-blue-300/20 bg-white/10'
-                : 'border-white/20 hover:border-white/40 hover:bg-white/10'
-          } ${className}`}
-        />
-        {showPasswordToggle && (
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-400 transition-colors duration-300"
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        )}
-      </div>
-      {error && (
-        <p className="mt-2 text-sm text-red-400 flex items-center gap-2 animate-fade-in">
-          <XCircle size={16} />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-};
-
-const Toast = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl backdrop-blur-md border transform transition-all duration-500 animate-slide-in-right ${
-      type === 'success'
-        ? 'bg-emerald-500/90 border-emerald-400 text-white'
-        : 'bg-red-500/90 border-red-400 text-white'
-    }`}>
-      {type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
-      <span className="font-medium">{message}</span>
-    </div>
-  );
-};
-
-const FloatingParticles = () => {
-  const particles = Array.from({ length: 20 }, (_, i) => (
-    <div
-      key={i}
-      className="absolute w-2 h-2 bg-blue-400/30 rounded-full animate-float"
-      style={{
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random() * 10}s`,
-        animationDuration: `${10 + Math.random() * 10}s`
-      }}
-    />
-  ));
-
-  return <div className="absolute inset-0 overflow-hidden pointer-events-none">{particles}</div>;
-};
+import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { authAPI } from '../services/api';
+import Button from '../components/Button';
+import InputField from '../components/InputField';
+import Card from '../components/Card';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -157,14 +29,12 @@ const Login = () => {
     
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
     }
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
     
     setErrors(newErrors);
@@ -172,94 +42,140 @@ const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+    e.preventDefault();
+    
     if (!validateForm()) return;
+    
     setLoading(true);
     try {
-      const res = await authAPI.login({ email: formData.email, password: formData.password });
-      localStorage.setItem('token', res.data.token);
-      userAPI.setUserData(res.data.user);
-      setToast({ message: 'Login successful! Redirecting...', type: 'success' });
-      setTimeout(() => {
-        navigate(`/dashboard/${res.data.user.role}`);
-      }, 1000);
-    } catch (err) {
-      setToast({ message: err.response?.data?.message || 'Login failed', type: 'error' });
+      const response = await authAPI.login(formData);
+      console.log('Login successful:', response.data);
+      
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userName', response.data.user.name);
+      localStorage.setItem('role', response.data.user.role);
+      localStorage.setItem('userId', response.data.user.id);
+      
+      // Navigate to role-specific dashboard
+      if (response.data.user.role === 'investor') {
+        navigate('/dashboard/investor');
+      } else if (response.data.user.role === 'entrepreneur') {
+        navigate('/dashboard/entrepreneur');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({
+        general: error.response?.data?.message || 'Login failed. Please check your credentials.'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      <div className="w-full flex items-center justify-center">
-        <div className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-[40vw] xl:max-w-[30vw] bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl px-6 py-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-6 shadow-2xl">
-              <Sparkles className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="p-8 shadow-xl border-0">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-8"
+          >
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogIn className="w-8 h-8 text-primary-600" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Sign In</h2>
-            <p className="text-gray-300">Sign in to your account</p>
-          </div>
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <InputField
-              label="Email Address"
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={handleChange}
-              error={errors.email}
-              icon={Mail}
-            />
-            <InputField
-              label="Password"
-              type="password"
-              name="password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={handleChange}
-              error={errors.password}
-              icon={Lock}
-              showPasswordToggle={true}
-            />
-            <Button
-              type="submit"
-              className="group flex items-center gap-2 justify-center mx-auto mt-2"
-              disabled={loading}
-              variant="primary"
-              style={{minWidth: '8rem'}}
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+            <p className="text-gray-600">Sign in to your account</p>
+          </motion.div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              {loading ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Signing in...</span>
-                </div>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </Button>
+              <InputField
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Enter your email"
+                icon={<Mail className="w-4 h-4" />}
+                error={errors.email}
+                required
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <InputField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Enter your password"
+                icon={<Lock className="w-4 h-4" />}
+                error={errors.password}
+                required
+              />
+            </motion.div>
+
+            {errors.general && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 bg-error-50 border border-error-200 rounded-lg"
+              >
+                <p className="text-sm text-error-600">{errors.general}</p>
+              </motion.div>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                loading={loading}
+                className="w-full"
+              >
+                {loading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </motion.div>
           </form>
-          <div className="mt-8 text-center">
-            <p className="text-gray-400">
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-6 text-center"
+          >
+            <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
-                Register
+              <Link
+                to="/register"
+                className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              >
+                Create one
               </Link>
             </p>
-          </div>
-        </div>
-      </div>
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
-        />
-      )}
+          </motion.div>
+        </Card>
+      </motion.div>
     </div>
   );
 };

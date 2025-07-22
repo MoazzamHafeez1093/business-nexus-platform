@@ -145,7 +145,8 @@ const seedData = async () => {
         industry: 'Clean Technology',
         stage: 'early-traction',
         pitchDeck: 'https://ecotech.com/pitch-deck.pdf'
-      }
+      },
+      published: true
     });
 
     await Profile.create({
@@ -165,7 +166,8 @@ const seedData = async () => {
         industry: 'Healthcare',
         stage: 'mvp',
         pitchDeck: 'https://healthsync.com/pitch-deck.pdf'
-      }
+      },
+      published: true
     });
 
     await Profile.create({
@@ -185,7 +187,8 @@ const seedData = async () => {
         industry: 'Agriculture Technology',
         stage: 'growth',
         pitchDeck: 'https://agronext.com/pitch-deck.pdf'
-      }
+      },
+      published: true
     });
 
     console.log('📝 Created user profiles');

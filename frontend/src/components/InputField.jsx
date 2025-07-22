@@ -1,35 +1,104 @@
-import React, { useState } from "react";
+import React from 'react';
+import { motion } from 'framer-motion';
 
-export default function InputField({ label, type = "text", icon, ...props }) {
-  const [show, setShow] = useState(false);
-  const isPassword = type === "password";
+const InputField = ({ 
+  label,
+  type = 'text',
+  placeholder,
+  value,
+  onChange,
+  error,
+  icon,
+  className = '',
+  required = false,
+  disabled = false,
+  multiline = false,
+  rows = 3,
+  endIcon,
+  ...props 
+}) => {
   return (
-    <div className="mb-4 w-full">
-      {label && <label className="block mb-1 font-medium text-gray-700 font-inter">{label}</label>}
+    <motion.div
+      className={`space-y-2 ${className}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      {label && (
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+          {required && <span className="text-error-500 ml-1">*</span>}
+        </label>
+      )}
+      
       <div className="relative">
-        <input
-          type={isPassword ? (show ? "text" : "password") : type}
-          className="w-full p-3 border-2 border-indigo-200 rounded-lg font-inter text-lg shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 transition pr-12"
-          {...props}
-        />
-        {isPassword && (
-          <button
-            type="button"
-            tabIndex={-1}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 focus:outline-none"
-            onClick={() => setShow((s) => !s)}
-          >
-            {show ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364-2.364A9.956 9.956 0 0022 9c0 5.523-4.477 10-10 10a9.956 9.956 0 01-4.636-1.364" /></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm2.121-2.121A9.956 9.956 0 0122 12c0 5.523-4.477 10-10 10S2 17.523 2 12c0-1.657.403-3.22 1.125-4.575" /></svg>
-            )}
-          </button>
+        {icon && (
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="text-gray-400 w-5 h-5">{icon}</span>
+          </div>
         )}
-        {icon && !isPassword && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400">{icon}</span>
+        {multiline ? (
+          <motion.textarea
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={rows}
+            className={`
+              w-full px-4 py-3 text-sm border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-all duration-200 
+              focus:outline-none focus:ring-2 focus:ring-offset-0
+              placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed
+              ${icon ? 'pl-10' : ''}
+              ${endIcon ? 'pr-10' : ''}
+              ${error 
+                ? 'border-error-300 focus:ring-error-500 focus:border-error-500' 
+                : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-gray-400'
+              }
+            `}
+            whileFocus={{ scale: 1.01 }}
+            {...props}
+          />
+        ) : (
+          <motion.input
+            type={type}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            className={`
+              w-full px-4 py-3 text-sm border rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-all duration-200 
+              focus:outline-none focus:ring-2 focus:ring-offset-0
+              placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed
+              ${icon ? 'pl-10' : ''}
+              ${endIcon ? 'pr-10' : ''}
+              ${error 
+                ? 'border-error-300 focus:ring-error-500 focus:border-error-500' 
+                : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-gray-400'
+              }
+            `}
+            whileFocus={{ scale: 1.01 }}
+            {...props}
+          />
+        )}
+        {endIcon && (
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            {endIcon}
+          </div>
         )}
       </div>
-    </div>
+      
+      {error && (
+        <motion.p
+          className="text-sm text-error-600"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {error}
+        </motion.p>
+      )}
+    </motion.div>
   );
-}
+};
+
+export default InputField;

@@ -1,70 +1,63 @@
-import React from "react";
+import React from 'react';
+import { motion } from 'framer-motion';
 
-export default function Button({
-  children,
-  className = "",
-  variant = "primary",
-  size = "md",
-  icon,
+const Button = ({ 
+  children, 
+  variant = 'primary', 
+  size = 'md', 
+  icon, 
   loading = false,
   disabled = false,
-  animation = true,
-  ...props
-}) {
-  const base =
-    "relative overflow-hidden font-semibold rounded-2xl transition-all duration-300 focus:outline-none focus:ring-4 active:scale-95 flex items-center justify-center gap-2 transform hover:scale-105 hover:shadow-xl";
+  className = '',
+  onClick,
+  type = 'button',
+  ...props 
+}) => {
+  const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
-    primary:
-      "bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white shadow-lg hover:from-indigo-700 hover:via-purple-700 hover:to-blue-700 focus:ring-indigo-400 hover:shadow-2xl",
-    secondary:
-      "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:from-emerald-600 hover:to-teal-600 focus:ring-emerald-400 hover:shadow-2xl",
-    ghost:
-      "bg-transparent text-indigo-600 border-2 border-indigo-300 hover:bg-indigo-50 hover:border-indigo-400 focus:ring-indigo-200 hover:shadow-lg",
-    danger:
-      "bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white shadow-lg hover:from-red-600 hover:via-pink-600 hover:to-rose-600 focus:ring-red-400 hover:shadow-2xl",
-    success:
-      "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:from-green-600 hover:to-emerald-600 focus:ring-green-400 hover:shadow-2xl",
-    warning:
-      "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg hover:from-yellow-600 hover:to-orange-600 focus:ring-yellow-400 hover:shadow-2xl",
-    dark:
-      "bg-gradient-to-r from-gray-700 to-gray-900 text-white shadow-lg hover:from-gray-800 hover:to-gray-900 focus:ring-gray-400 hover:shadow-2xl",
+    primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md hover:shadow-primary-500/25',
+    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500 border border-gray-300',
+    success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 shadow-sm hover:shadow-md hover:shadow-success-500/25',
+    danger: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 shadow-sm hover:shadow-md hover:shadow-error-500/25',
+    ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:ring-gray-500',
+    outline: 'border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500',
   };
   
   const sizes = {
-    sm: "px-4 py-2 text-sm",
-    md: "px-6 py-3 text-base",
-    lg: "px-8 py-4 text-lg",
-    xl: "px-10 py-5 text-xl",
+    sm: 'px-3 py-2 text-xs',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-6 py-3 text-base',
+    xl: 'px-8 py-4 text-lg',
   };
-
-  const animationClasses = animation ? "hover:scale-105 hover:shadow-2xl active:scale-95" : "";
-
+  
+  const classes = `${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`;
+  
   return (
-    <button
-      className={`
-        ${base} 
-        ${variants[variant] || variants.primary} 
-        ${sizes[size]} 
-        ${animationClasses}
-        ${loading ? "opacity-80 cursor-not-allowed" : ""}
-        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
-        ${className}
-      `}
+    <motion.button
+      type={type}
+      className={classes}
+      onClick={onClick}
       disabled={disabled || loading}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
       {...props}
     >
       {loading ? (
-        <span className="flex items-center gap-2">
-          <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          <span>Loading...</span>
-        </span>
-      ) : (
-        <>
-          {icon && <span className="flex items-center">{icon}</span>}
-          {children}
-        </>
-      )}
-    </button>
+        <motion.div
+          className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
+      ) : icon ? (
+        <span className="w-4 h-4">{icon}</span>
+      ) : null}
+      {children}
+    </motion.button>
   );
-}
+};
+
+export default Button;

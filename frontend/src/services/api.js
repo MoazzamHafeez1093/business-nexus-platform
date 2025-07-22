@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5005/api';
 
 // Create axios instance with base URL
 const api = axios.create({
@@ -16,8 +16,21 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data);
   return config;
 });
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    console.log(`✅ API Response: ${response.status} ${response.config.url}`, response.data);
+    return response;
+  },
+  (error) => {
+    console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`, error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
 
 // Auth APIs
 export const authAPI = {
@@ -72,6 +85,53 @@ export const userAPI = {
     localStorage.setItem('userId', userData.id);
     localStorage.setItem('role', userData.role);
   },
+};
+
+export const apiHelper = {
+  getEntrepreneurs: async () => {
+    const token = localStorage.getItem('token');
+    return await fetch('/api/profile/entrepreneurs', {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => res.json());
+  },
+  sendCollaborationRequest: async (entrepreneurId) => {
+    const token = localStorage.getItem('token');
+    return await fetch('/api/collaboration/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ entrepreneurId })
+    }).then(res => {
+      if (!res.ok) throw new Error('Failed to send request');
+      return res.json();
+    });
+  },
+  getCollaborationRequests: async () => {
+    const token = localStorage.getItem('token');
+    return await fetch('/api/collaboration/requests', {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => res.json());
+  },
+  updateCollaborationRequestStatus: async (requestId, status) => {
+    const token = localStorage.getItem('token');
+    return await fetch(`/api/collaboration/request/${requestId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    }).then(res => {
+      if (!res.ok) throw new Error('Failed to update request');
+      return res.json();
+    });
+  },
+};
+
+export const chatAPI = {
+  getConnectedUsers: () => api.get('/chat/connected-users'),
 };
 
 export default api;

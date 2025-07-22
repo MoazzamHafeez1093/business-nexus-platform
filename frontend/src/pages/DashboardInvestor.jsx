@@ -1,313 +1,476 @@
-import React, { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, User, MessageCircle, X, Send } from 'lucide-react';
-import axios from 'axios';
-import DashboardLayout from '../layouts/DashboardLayout';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { 
+  TrendingUp, 
+  Users, 
+  MessageCircle, 
+  Briefcase, 
+  DollarSign, 
+  Eye,
+  ArrowRight,
+  Calendar,
+  MapPin,
+  Building,
+  User,
+  Settings,
+  Search
+} from 'lucide-react';
+import { collaborationAPI, profileAPI } from '../services/api';
+import Card from '../components/Card';
 import Button from '../components/Button';
-import { Routes, Route } from 'react-router-dom';
-import Settings from './Settings';
 
-const Toast = ({ message, type, onClose }) => {
+const DashboardInvestor = () => {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const navigate = useNavigate();
+  const [entrepreneurs, setEntrepreneurs] = useState([]);
+  const [loadingEntrepreneurs, setLoadingEntrepreneurs] = useState(true);
+  const [requesting, setRequesting] = useState({});
+  const entrepreneurSectionRef = useRef(null);
+
   useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+    fetchRequests();
+    fetchEntrepreneurs();
+  }, []);
 
-  return (
-    <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg transform transition-all duration-300 animate-slide-in-right ${
-      type === 'success' 
-        ? 'bg-emerald-500 text-white' 
-        : 'bg-red-500 text-white'
-    }`}>
-      {type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
-      <span className="font-medium">{message}</span>
-    </div>
-  );
-};
-
-const CollaborationModal = ({ entrepreneur, isOpen, onClose, onSend }) => {
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    if (!message.trim()) return;
-    
-    setLoading(true);
+  const fetchRequests = async () => {
     try {
-      await onSend(entrepreneur, message);
-      setMessage('');
-      onClose();
+      const response = await collaborationAPI.getRequests();
+      setRequests(response.data);
     } catch (error) {
-      console.error('Error sending request:', error);
+      console.error('Error fetching requests:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Send Collaboration Request</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">{entrepreneur?.name}</h4>
-              <p className="text-sm text-gray-600">{entrepreneur?.startup}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your Message
-          </label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            rows="4"
-            placeholder="Introduce yourself and explain why you're interested in collaborating..."
-          />
-        </div>
-        
-        <div className="flex gap-3">
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSend}
-            variant="primary"
-            loading={loading}
-            disabled={!message.trim()}
-            icon={<Send className="w-4 h-4" />}
-            className="flex-1"
-          >
-            Send Request
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const EntrepreneurCard = ({ entrepreneur, onRequest }) => {
-  // Handle both API data and mock data structures
-  const name = entrepreneur.name || entrepreneur.userId?.name || 'Unknown';
-  const startup = entrepreneur.startup || entrepreneur.profile?.startup?.name || 'Startup';
-  const pitchSummary = entrepreneur.pitchSummary || entrepreneur.profile?.startup?.description || entrepreneur.profile?.bio || 'No description available';
-  
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
-      <div className="flex flex-col md:flex-row items-start gap-6">
-        <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-          <User className="w-8 h-8 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">{name}</h2>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                  {startup}
-                </span>
-              </div>
-            </div>
-            <Button 
-              onClick={() => onRequest(entrepreneur)} 
-              className="flex-shrink-0" 
-              size="sm"
-              variant="primary"
-              icon={<MessageCircle className="w-4 h-4" />}
-            >
-              Request Collaboration
-            </Button>
-          </div>
-          <p className="text-gray-600 leading-relaxed">{pitchSummary}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const PlaceholderPage = ({ title }) => (
-  <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-    <h2 className="text-3xl font-bold mb-4 text-indigo-700">{title}</h2>
-    <p className="text-gray-500 text-lg">This feature is coming soon!</p>
-  </div>
-);
-
-const DashboardInvestor = () => {
-  const [entrepreneurs, setEntrepreneurs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState(null);
-  const [selectedEntrepreneur, setSelectedEntrepreneur] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    const fetchEntrepreneurs = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/profile/entrepreneurs', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('Entrepreneurs data:', response.data);
-        setEntrepreneurs(response.data);
-      } catch (error) {
-        console.error('Error fetching entrepreneurs:', error);
-        // Enhanced mock data fallback
-        setEntrepreneurs([
-          { 
-            id: 1, 
-            name: 'Alice Smith', 
-            startup: 'EcoTech', 
-            pitchSummary: 'Revolutionizing green energy with AI-powered solutions for sustainable living.',
-            profile: { bio: 'Passionate entrepreneur building the future of sustainable technology.' }
-          },
-          { 
-            id: 2, 
-            name: 'Bob Lee', 
-            startup: 'HealthSync', 
-            pitchSummary: 'Connecting patients and doctors through a seamless digital platform.',
-            profile: { bio: 'Healthcare innovator focused on improving patient outcomes.' }
-          },
-          { 
-            id: 3, 
-            name: 'Carla Gomez', 
-            startup: 'AgroNext', 
-            pitchSummary: 'Smart agriculture for the next generation of farmers.',
-            profile: { bio: 'Agricultural technology expert helping farmers increase productivity.' }
-          }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEntrepreneurs();
-  }, []);
-
-  const handleRequest = (entrepreneur) => {
-    setSelectedEntrepreneur(entrepreneur);
-    setShowModal(true);
-  };
-
-  const handleSendRequest = async (entrepreneur, message) => {
+  const handleRequestAction = async (requestId, action) => {
+    setSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/collaboration/request', {
-        entrepreneurId: entrepreneur.id,
-        message: message
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setToast({ 
-        message: `Collaboration request sent to ${entrepreneur.name}!`, 
-        type: 'success' 
-      });
+      await collaborationAPI.updateRequestStatus(requestId, action);
+      setToast({ message: `Request ${action}d successfully!`, type: 'success' });
+      fetchRequests(); // Refresh the list
     } catch (error) {
-      console.error('Error sending collaboration request:', error);
+      console.error(`Error ${action}ing request:`, error);
       setToast({ 
-        message: 'Failed to send request. Please try again.', 
+        message: error.response?.data?.message || `Failed to ${action} request. Please try again.`, 
         type: 'error' 
       });
-      throw error;
+    } finally {
+      setSaving(false);
     }
   };
 
+  const fetchEntrepreneurs = async () => {
+    setLoadingEntrepreneurs(true);
+    try {
+      const res = await profileAPI.getEntrepreneurs();
+      console.log('Entrepreneurs API response:', res.data);
+      setEntrepreneurs(res.data);
+    } catch (err) {
+      setEntrepreneurs([]);
+    } finally {
+      setLoadingEntrepreneurs(false);
+    }
+  };
+
+  const handleRequestCollaboration = async (entrepreneurId) => {
+    setRequesting(prev => ({ ...prev, [entrepreneurId]: true }));
+    try {
+      const token = localStorage.getItem('token');
+      await collaborationAPI.sendCollaborationRequest(entrepreneurId);
+      setToast({ message: 'Collaboration request sent!', type: 'success' });
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Failed to send request', type: 'error' });
+    } finally {
+      setRequesting(prev => ({ ...prev, [entrepreneurId]: false }));
+    }
+  };
+
+  const stats = [
+    {
+      title: 'Portfolio Companies',
+      value: '12',
+      icon: Building,
+      color: 'primary',
+      change: '+2',
+      changeType: 'positive'
+    },
+    {
+      title: 'Total Investments',
+      value: '$2.4M',
+      icon: DollarSign,
+      color: 'success',
+      change: '+15%',
+      changeType: 'positive'
+    },
+    {
+      title: 'Active Deals',
+      value: '8',
+      icon: Briefcase,
+      color: 'warning',
+      change: '+3',
+      changeType: 'positive'
+    },
+    {
+      title: 'Messages',
+      value: '89',
+      icon: MessageCircle,
+      color: 'primary',
+      change: '+12%',
+      changeType: 'positive'
+    }
+  ];
+
+  const recentActivities = [
+    {
+      id: 1,
+      type: 'investment',
+      message: 'New investment in TechStartup Inc.',
+      time: '1 hour ago',
+      status: 'completed'
+    },
+    {
+      id: 2,
+      type: 'request',
+      message: 'Collaboration request from GreenEnergy Co.',
+      time: '3 hours ago',
+      status: 'pending'
+    },
+    {
+      id: 3,
+      type: 'message',
+      message: 'Message from Sarah Chen (CEO)',
+      time: '1 day ago',
+      status: 'read'
+    }
+  ];
+
+  const topStartups = [
+    {
+      id: 1,
+      name: 'TechStartup Inc.',
+      industry: 'Fintech',
+      stage: 'Series A',
+      funding: '$500K',
+      status: 'Active'
+    },
+    {
+      id: 2,
+      name: 'GreenEnergy Co.',
+      industry: 'Clean Energy',
+      stage: 'Seed',
+      funding: '$250K',
+      status: 'Due Diligence'
+    },
+    {
+      id: 3,
+      name: 'HealthTech Solutions',
+      industry: 'Healthcare',
+      stage: 'Series B',
+      funding: '$1.2M',
+      status: 'Active'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
-    <DashboardLayout title="Investor Dashboard" subtitle="Discover and connect with entrepreneurs">
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-      
-      <CollaborationModal
-        entrepreneur={selectedEntrepreneur}
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedEntrepreneur(null);
-        }}
-        onSend={handleSendRequest}
-      />
-      
-      <Routes>
-        <Route index element={
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Entrepreneurs</h2>
-                <p className="text-gray-600 mt-1">Discover and connect with innovative startups</p>
+    <div className="space-y-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investor Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your investment portfolio and startup connections</p>
+        </div>
+        <Button
+          onClick={() => {
+            const userId = localStorage.getItem('userId');
+            navigate(`/profile/investor/${userId}`);
+          }}
+          variant="primary"
+          icon={<ArrowRight className="w-4 h-4" />}
+        >
+          View Profile
+        </Button>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        {stats.map((stat, index) => (
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 + index * 0.1 }}
+          >
+            <Card className="p-6 hover-lift">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stat.value}</p>
+                  <div className="flex items-center mt-2">
+                    <span className={`text-sm font-medium ${
+                      stat.changeType === 'positive' ? 'text-success-600' : 'text-error-600'
+                    }`}>
+                      {stat.change}
+                    </span>
+                    <span className="text-sm text-gray-500 ml-1">from last month</span>
+                  </div>
+                </div>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${stat.color}-100 dark:bg-${stat.color}-900`}>
+                  <stat.icon className={`w-6 h-6 text-${stat.color}-600 dark:text-${stat.color}-400`} />
+                </div>
               </div>
-              <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                {entrepreneurs.length} entrepreneurs found
-              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Entrepreneurs List Section */}
+      <div ref={entrepreneurSectionRef} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-800 mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Discover Entrepreneurs</h2>
+        {loadingEntrepreneurs ? (
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : entrepreneurs.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">No entrepreneurs found.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {entrepreneurs.filter(user => user.profile && user.profile.published).map((user) => {
+              const profile = user.profile || {};
+              const startup = profile.startup || {};
+              return (
+                <div key={user._id} className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-800 dark:to-gray-900 border border-blue-100 dark:border-gray-700 rounded-xl shadow p-5 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">{user.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{user.email}</p>
+                    <div className="mb-2">
+                      <span className="font-medium text-primary-700 dark:text-primary-300">Idea:</span> {startup.name || 'N/A'} - {startup.description || 'No pitch summary.'}
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-medium text-primary-700 dark:text-primary-300">Funding Ask:</span> {startup.fundingNeed?.amount ? `$${startup.fundingNeed.amount.toLocaleString()}` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => navigate(`/chat/${user._id}`)}
+                    >
+                      Message
+                    </Button>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      loading={!!requesting[user._id]}
+                      onClick={() => handleRequestCollaboration(user._id)}
+                    >
+                      Request
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Find Startups Button */}
+      <div className="flex justify-center mt-12">
+        <button
+          className="px-8 py-4 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white font-bold text-lg shadow-lg hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-pink-200 dark:focus:ring-pink-800"
+          onClick={() => entrepreneurSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
+        >
+          Find Startups
+        </button>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Top Startups */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="lg:col-span-2"
+        >
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Top Portfolio Companies</h2>
+              <Button
+                onClick={() => navigate('/dashboard/investor')}
+                variant="ghost"
+                size="sm"
+                icon={<Eye className="w-4 h-4" />}
+              >
+                View All
+              </Button>
             </div>
             
-            {loading ? (
-              <div className="flex justify-center items-center py-16">
-                <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : entrepreneurs.length > 0 ? (
-              <div className="space-y-6">
-                {entrepreneurs.map(e => (
-                  <EntrepreneurCard key={e.id} entrepreneur={e} onRequest={handleRequest} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <User className="w-12 h-12 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Entrepreneurs Found</h3>
-                <p className="text-gray-600 mb-6">There are no entrepreneurs registered yet.</p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-800 text-sm">
-                    💡 <strong>Tip:</strong> Encourage entrepreneurs to join the platform to discover investment opportunities!
-                  </p>
-                </div>
-              </div>
-            )}
+            <div className="space-y-4">
+              {topStartups.map((startup, index) => (
+                <motion.div
+                  key={startup.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
+                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+                      <Building className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{startup.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {startup.industry} • {startup.stage}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900 dark:text-white">{startup.funding}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      startup.status === 'Active' ? 'bg-success-100 text-success-700' :
+                      startup.status === 'Due Diligence' ? 'bg-warning-100 text-warning-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {startup.status}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Recent Activity */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
+            <div className="space-y-4">
+              {recentActivities.map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    activity.type === 'investment' ? 'bg-success-100 dark:bg-success-900' :
+                    activity.type === 'request' ? 'bg-primary-100 dark:bg-primary-900' :
+                    'bg-warning-100 dark:bg-warning-900'
+                  }`}>
+                    {activity.type === 'investment' && <DollarSign className="w-4 h-4 text-success-600 dark:text-success-400" />}
+                    {activity.type === 'request' && <Briefcase className="w-4 h-4 text-primary-600 dark:text-primary-400" />}
+                    {activity.type === 'message' && <MessageCircle className="w-4 h-4 text-warning-600 dark:text-warning-400" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.message}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{activity.time}</p>
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${
+                    activity.status === 'pending' ? 'bg-warning-500' :
+                    activity.status === 'read' ? 'bg-primary-500' :
+                    'bg-success-500'
+                  }`} />
+                </motion.div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Button
+              onClick={() => navigate('/chat')}
+              variant="outline"
+              size="lg"
+              icon={<MessageCircle className="w-5 h-5" />}
+              className="justify-start"
+            >
+              Start Chat
+            </Button>
+            <Button
+              onClick={() => {
+                const userId = localStorage.getItem('userId');
+                navigate(`/profile/investor/${userId}`);
+              }}
+              variant="outline"
+              size="lg"
+              icon={<User className="w-5 h-5" />}
+              className="justify-start"
+            >
+              Edit Profile
+            </Button>
+            <Button
+              onClick={() => navigate('/settings')}
+              variant="outline"
+              size="lg"
+              icon={<Settings className="w-5 h-5" />}
+              className="justify-start"
+            >
+              Settings
+            </Button>
+            <Button
+              onClick={() => navigate('/dashboard/investor')}
+              variant="outline"
+              size="lg"
+              icon={<Search className="w-5 h-5" />}
+              className="justify-start"
+            >
+              Find Startups
+            </Button>
           </div>
-        } />
-        <Route path="settings" element={<Settings />} />
-        <Route path="messages" element={<PlaceholderPage title="Messages" />} />
-        <Route path="help" element={<PlaceholderPage title="Help & Support" />} />
-      </Routes>
-      
-      <style jsx>{`
-        @keyframes slide-in-right {
-          from {
-            opacity: 0;
-            transform: translateX(100px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.5s ease-out forwards;
-        }
-      `}</style>
-    </DashboardLayout>
+        </Card>
+      </motion.div>
+
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${
+            toast.type === 'success' ? 'bg-success-500 text-white' : 'bg-error-500 text-white'
+          }`}
+        >
+          {toast.message}
+        </motion.div>
+      )}
+    </div>
   );
 };
 

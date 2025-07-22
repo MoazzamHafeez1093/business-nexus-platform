@@ -1,6 +1,8 @@
 import Profile from '../models/Profile.js';
 import User from '../models/User.js';
 
+console.log('profileController.js loaded');
+
 // Get profile by ID
 export const getProfile = async (req, res) => {
   try {
@@ -51,7 +53,10 @@ export const updateProfile = async (req, res) => {
     }
     
     await profile.save();
-    
+
+    // Ensure the User document has a profile reference
+    await User.findByIdAndUpdate(userId, { profile: profile._id });
+
     // Populate user data for response
     const populatedProfile = await Profile.findById(profile._id).populate('userId', 'name email role');
     
@@ -71,16 +76,22 @@ export const updateProfile = async (req, res) => {
 // Get all entrepreneurs (for investors)
 export const getEntrepreneurs = async (req, res) => {
   try {
+    // Find all users with role 'entrepreneur' and populate their profile
     const entrepreneurs = await User.find({ role: 'entrepreneur' })
-      .select('name email createdAt')
+      .select('name email role profile')
       .populate({
         path: 'profile',
-        select: 'bio startup location'
+        match: { published: true }, // Only published profiles
+        select: 'bio startup location published',
       });
-    
-    res.json(entrepreneurs);
+
+    // Filter out users without a published profile (populate returns null if not matched)
+    const publishedEntrepreneurs = entrepreneurs.filter(user => user.profile);
+
+    res.json(publishedEntrepreneurs);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching entrepreneurs:', error);
+    res.status(500).json({ message: 'Server error fetching entrepreneurs' });
   }
 };
 
